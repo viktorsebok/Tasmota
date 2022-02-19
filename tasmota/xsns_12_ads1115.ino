@@ -123,6 +123,8 @@ struct ADS1115 {
   uint8_t addresses[4] = { ADS1115_ADDRESS_ADDR_GND, ADS1115_ADDRESS_ADDR_VDD, ADS1115_ADDRESS_ADDR_SDA, ADS1115_ADDRESS_ADDR_SCL };
   uint8_t found[4] = {false,false,false,false};
   int16_t last_values[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+  int16_t average_array[4][8] = {{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
+  uint8_t average_idx[4] = {0,0,0,0};
 } Ads1115;
 
 //Ads1115StartComparator(channel, ADS1115_REG_CONFIG_MODE_SINGLE);
@@ -157,7 +159,13 @@ int16_t Ads1115GetConversion(uint8_t channel)
   delay(ADS1115_CONVERSIONDELAY);
   // Read the conversion results
   uint16_t res = I2cRead16(Ads1115.address, ADS1115_REG_POINTER_CONVERT);
-  return (int16_t)res;
+  Ads1115.average_array[channel][Ads1115.average_idx[channel] & 0x07] = (int16_t)res;
+  Ads1115.average_idx[channel]++;
+  int32_t sum = 0;
+  for(uint8_t i = 0; i<8; i++){
+    sum+=Ads1115.average_array[channel][i];
+  }
+  return (int16_t)(sum/8);
 }
 
 /********************************************************************************************/
